@@ -1,0 +1,44 @@
+Cours 1: Vulnerabilities in OS
+
+Attack dirty cow:
+
+- race condition vulnerability:
+Lorsque plusieurs requests sont traintees au meme temps avec peu de difference dans leur temps de processeur 
+
+when multiple threads read and write on the same variable or memory segment.
+
+occurs inside a critical section, race conditions can be avoided if the critical section is treated as an atomic instruction, or using locks and semaphors to avoid to threads accessing the same section at the same time.
+
+the vulnerabilty arises during a TOCTTOU window---
+
+TOCTTOU -> TOC : when a resource is checked, TTOU : when a resource is used
+
+During the this period an attacker can modify the resource in quesiton leading to unauthorized access.
+
+
+Dirty cow:
+linux kernel vulnerabilty, when an attacker gains write access to a read only memory mappings which can lead to privilege escalation
+
+how it works?
+
+Its an attack on the RAM memory,
+
+first we crete a private copy of a read only file (mapping). Second we write to the private copy. Since its our first time writing to the private copy, the COW feature takes place. 
+
+The problem lies in the fact that the write operation is not atomic, #1 it locates the physical address, #2 it writes to the physical address, via another thread we could get in the middle of those two operations and tell the kernle to throw away our private copy--using madvise. The throwing away of the private copy results in the kernel accidently writing to the read-only file. 
+
+
+
+Lien avec TOCTOU:
+
+When we execute try to manipulate some files, the kernel might check the permissions (read or write) using a toctou window, the attacker tkes advantage of the small window of time between the check and the use to gain write access on the file and change its permissions before reading it for example. During that window, the attacker exploits the Dirty COW vulnerablity to gain write access and change the permissions.
+
+Resume: On cree une copie privee dun fichier dont on a pas les droits, on le modifie a notre guise, ensuite on exploite la toctou window et on free le fichier de la memoire durant la window, ceci fait que le kernel vient ecraser notre copie sur loriginal.
+
+Cours2: Access control
+
+
+  
+
+
+
