@@ -37,8 +37,292 @@ Resume: On cree une copie privee dun fichier dont on a pas les droits, on le mod
 
 Cours2: Access control
 
+TCB (trusted computer base)-----
+- all the protection mechanisms within a system
+- tpm -> hardware, secure cryptographic chip
+- TCB must mediate all security-sensitive operations
 
-  
+Viable trust model------
+- verifiy correcteness of TCB
+- verify that the software execution cannot be tempered by processes outside the TCB
+
+challenges:
+
+- identify TCB softwares
+- verify correctness of TCB
+- protect the tcb softwares from external modifications
+
+Access control -----
+
+Protection system:
+- Disctretionnary access control
+- Mandatory access control 
+
+Reference monitor:
+- Policy base
+- authorisation module
+
+DAC idea:
+
+Lampsons matrix user/object which defines the writes of the user on a specific object
+
+Raw = subject
+Column = object
+Cell = authorized actions
+
+HRU:
+
+access control matrix of administration
+- Objets have owners
+- owners define the privileges to their objects
+- owner can allow non-owners to modify privileges via commands
+
+ex: Grant_read(x1, x2, y)
+	if 'own in [x1, y]'
+	then enter 'read' into [x2, y]
+	end
+ex: CREATE_object(x, y)
+	create object y
+	enter 'own' into [x, y]
+	end
+
+
+Safety problem:
+with an access controlm matrix and a set of commands to update it, can a subjec gain a rigt of access to an object?
+
+HRU shows that leakage of privileges is not possible in general case
+
+
+unwanted leakage: if a subject gets granted an execute privilege, he can get the write privilege
+
+problem: accessibility analysis is very complex
+
+problem: if a user wants to print a document he has to transfer access write to the printer spooler, in linux/unix this is imposible to transfer ownership.
+
+problem: difficult to give a set of writes to a set of subject excluding another set in unix/linux
+
+
+
+problem: possible data leakage when shifting between users and combine their permissions
+
+
+Mandatory Access Control---Bell and Lapadula
+
+Multilevel secure policy
+- Subjects are assigned clearance
+- Objects are assigned classifications
+
+ 
+- Read is authorized if (clearance(subject)) >= classification(object)
+
+what does it mean? NO READ UP
+
+But time-sharing -> program sharing -> risk of malicious software
+
+
+Problem: a malicious software could read secret data and write it in low level classification which why
+
+NO WRITE DOWN!
+which applies only to programs
+
+Objectif de Bell et Lapadula -> ensure confidentiality
+
+Biba-----
+
+Objectif: Ensure integrity (B&L inverted)
+- avoid the the spread of traps to illegally modify data 
+
+- Biba ne previent pas les virus, mais evite leur propagation sur des levelsde securite plus haut
+
+- multilevel sandbox
+
+BIBA -> no write up, no read down 
+
+Reference monitor------
+
+a component that treats access requests via an interface defined by individual hooks that invoke the monitors auhtorization module to submit and label transition queries using the corrsponding state
+
+
+Evaluation methodology----
+
+
+3 requirements, COMPLETE MEDIATION, TEMPERPROOFNESS, VERIFIABILITY
+
+complete mediation:
+
+reference validation mechansm is a system component responsible for enforcing a system's access control policy over user process operations
+
+it assures a user process can only perform authorized operations
+
+uses mediation interfaces
+
+problem: tocttou
+
+tocttou redirection,ex mkdir() + chown() -> the requester can change the directory name in the tocttou window and make the chown() (TOU) link to ex /etc/passwd/ 
+
+ How can the race condition mitigated: use static paths instead of dynamically assigned paths 
+
+we can fix the race conditions by using MAC, the process that would try to exploit the vulnerability wont have the access rights on the object
+
+Temperproofness-----
+
+- TCB binaries and data files are unmodified
+
+- perform binary verification using trusted programs ex: flawfinder
+
+- protect: stackguard, stack randomization
+
+
+Verifiability-----
+
+we have to verify that the program / os is safe (memory accesses are valid, no arithmetic overflow, division by zero etc)
+
+
+Cours 3: Multics
+- Memory segments are paged with a fixed size for 32 bit systems -> 1024 words / page
+
+storage and access control lists:
+
+- segments and directories are protected by ACLS (access control lists)
+- the access to a segment is made by a Multics process
+- each process is assigned at its creation a principal identifier
+
+Principal identifier is compared with those appearing in the access control list of an object, if there is no match, no access
+
+ACLs can include a dont care flag * which means any process can access that object
+
+
+acl multics standard
+
+{ individual user } { projects } { compartments }
+
+
+restricitions of acls:
+
+- cant give an access based on context ex: time of access
+- cannot restrict access for users that are in two or more compartments simoultanously 
+
+
+AIM -> Access Isolation Mechanisms-------
+
+AIM classification information:
+- 2 types for each segment
+- secyrity levels (from 0 to 7)
+- Categories (18)
+
+AIM clearance information:
+- user clearance and user category
+- there is a maximum clearance level
+
+Access authorizaiton is based on comparing the segments classification (SC) to the users's clearance (UC)
+
+
+DECSISIONS:
+
+UC == SC : the level of UC equals the level of SC & category set of UC is identical to the category set of SC
+
+UC >> SC : UC's level is greater than SC's & SC's category is a subset of UC's category set
+
+UC << SC : if SC >> UC ??
+
+UC is "isolated" from SC: if none of the above apply
+
+
+if UC >= SC then user may read or execute the segment and those below his current clearance
+
+&& user cannot read or execute any segment higher or isolated 
+
+in short : read down but no read up
+
+
+
+On a write request:
+
+User clearance = segment classification
+
+prevents user from declassifying information by writing down 
+
+& 
+
+altering classified information by writing up
+
+in sum :
+
+Each directory has an AIM classification:
+
+	User clearance ACCESS to a directory >= directory classification
+	User clereance MANIPULATION of directory entries = directory classification
+
+
+
+Rings structure of MULTICS
+
+Ring 0: Most privileged -> kernel - reference monitor
+Ring 2: vendor supplied code hat is less privileged than the kernel but more than other users -> in the kernel space, AIM does not apply
+Ring 3: Availale for user-supplied apps -> outside of the security kernel and cannot escape AIM
+Ring 4: Used to run apps -> outside the security kernel and cannot escape aim
+Ring 5: Used to run less-privileged user programs -> outside the security kernel and cannot escape AIM
+
+Ring 6: Has almost no dircet access to system functions
+
+Ring 7 : same as 6
+
+6 & t must call user-supplied code in inner rings to accomplish any useful work
+
+Ring Brackets-----
+
+Each segment is assigned a ring bracket which specifies which ring can use any of the specified permission modes (R,W,X)
+
+a special hardware register keeps track of the ring number the user process is executing, that number increases or decreases based on the segments referenced
+
+
+Access bracket:
+- pair of integers x1 and x2 such that x1 >= x2
+
+Limit:
+- an integer x3 such that x2 <= x1 <= x3
+
+Gates:
+- entry points at which segments may be called
+
+Global policy rule for execution:
+
+if process of ring i wants to execute a segment with a bracket {x1, x2}
+	then if x2 <= i <=x1 && i stays unchanged
+	then access is allowed
+	
+	else generate a trap
+
+trap cases execute X:
+
+case 1: i >= x1 and segment bracket {x1, x2}, x1 >= x2
+	call is allowed
+	ring number of process shifts to x1 (access rights are limited)
+	if parameters are passed to segment, they are copied to an area accecible in ring x1
+
+case 2: i < x2 and segment bracket {x1, x2}, x1 >= x2
+	call is allowed i <= x3 (the limit) and
+	call is redirected to entry points in the list of gates
+	
+	if the call is successful, i shifts to x2
+
+trap cases RW:
+for a segment with {x1, x2} a process with i can write if i between 0 and x2 (write bracket)
+
+for the same segment, a process with i can read if i between 0 and x1 (read bracket)
+
+semantics:
+
+process of i, i between 0 and x2 can write down in segmeent {x1, x2}
+process i is trusted in this case
+
+
+
+
+
+
+ 
+
 
 
 
